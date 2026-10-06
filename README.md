@@ -18,14 +18,21 @@ tests/            Vitest tests for src/services.js (no HTTP server required)
 
 `GET /api/services` with the header `X-Service-API-Key: <key>`.
 
-| Situation                          | Response                                        |
-| ---------------------------------- | ----------------------------------------------- |
-| Key matches `SERVICE_API_KEY`      | `200` `{ "services": [{ "name", "status" }] }`  |
-| Key missing or incorrect           | `401` `{ "error": "Unauthorized" }`             |
-| `SERVICE_API_KEY` not configured   | `500` `{ "error": "Server configuration error" }` |
-| Unexpected server error            | `500` `{ "error": "Internal server error" }`    |
+|| Situation                          | Response                                        |
+|| ---------------------------------- | ----------------------------------------------- |
+|| Key matches `SERVICE_API_KEY`      | `200` `{ "services": [{ "name", "status", "latencyMs", "requestCorrelationId", "error?", "errorType?" }] }`  |
+|| Key missing or incorrect           | `401` `{ "error": "Unauthorized" }`             |
+|| `SERVICE_API_KEY` not configured   | `500` `{ "error": "Server configuration error" }` |
+|| Unexpected server error            | `500` `{ "error": "Internal server error" }`    |
 
 Each service `status` is either `healthy` or `unhealthy`. A service is `unhealthy` when its upstream returns a non-2xx response, a body whose `status` is not `"ok"`, an unparseable body, or throws. The reason is logged to the server console as a `[services]` warning.
+
+**Reliability Features:**
+- **Timeout handling**: Requests timeout after 5 seconds (configurable) to prevent hanging
+- **Automatic retries**: Failed requests are retried up to 2 times with exponential backoff
+- **Latency tracking**: Response time in milliseconds is included for healthy services
+- **Error details**: Unhealthy services include error type (`timeout`, `http_error`, `status_error`, `network_error`) and error message
+- **Request correlation**: Each request has a unique ID for tracing through logs
 
 Upstream services are simulated by `simulateUpstream()` in `src/services.js`, which returns a standard fetch `Response`. No external network calls are made.
 
@@ -50,10 +57,10 @@ cp .env.example .env
 
 Then edit `.env` and set `SERVICE_API_KEY` to a value of your choice. It is required: there is no default, and the API returns `500 Server configuration error` until it is set.
 
-| Variable          | Required | Default | Purpose                                         |
-| ----------------- | -------- | ------- | ----------------------------------------------- |
-| `PORT`            | No       | `3000`  | Port the server listens on                      |
-| `SERVICE_API_KEY` | Yes      | none    | Key clients must send in `X-Service-API-Key`    |
+|| Variable          | Required | Default | Purpose                                         |
+|| ----------------- | -------- | ------- | ----------------------------------------------- |
+|| `PORT`            | No       | `3000`  | Port the server listens on                      |
+|| `SERVICE_API_KEY` | Yes      | none    | Key clients must send in `X-Service-API-Key`    |
 
 `.env` is loaded automatically on startup if present. Variables set in the shell take precedence over `.env`. Never commit `.env`; it is listed in `.gitignore`.
 
@@ -92,7 +99,7 @@ npm run lint
 3. Open http://localhost:3000 in a browser.
 4. Enter the same API key in the "Service API key" field.
 5. Click **Refresh Status**.
-6. Confirm all three services report **Healthy**.
+6. Confirm all three services report **Healthy** with latency shown.
 7. Run the tests: `npm test`.
 8. Run the linter: `npm run lint`.
 
