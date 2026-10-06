@@ -14,6 +14,7 @@ vi.spyOn(console, 'warn').mockImplementation(() => {});
 
 const healthyUpstream = async () => Response.json({ status: 'ok' });
 const failingUpstream = async () => Response.json({ error: 'boom' }, { status: 500 });
+const noContentUpstream = async () => new Response(null, { status: 204 });
 
 describe('checkApiKey', () => {
   it('accepts a matching key', () => {
@@ -52,6 +53,13 @@ describe('checkService', () => {
   it('reports healthy with the default simulated upstream', async () => {
     expect(await checkService('Webhook Service', simulateUpstream)).toEqual({
       name: 'Webhook Service',
+      status: 'healthy',
+    });
+  });
+
+  it('reports healthy for HTTP 204 No Content responses', async () => {
+    expect(await checkService('API Gateway', noContentUpstream)).toEqual({
+      name: 'API Gateway',
       status: 'healthy',
     });
   });

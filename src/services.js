@@ -45,9 +45,11 @@ export async function checkService(name, upstream = simulateUpstream) {
       return { name, status: 'unhealthy' };
     }
 
-    const body = await response.json();
-    if (body?.status !== 'ok') {
-      console.warn(`[services] ${name}: upstream reported status ${JSON.stringify(body?.status)}`);
+    // Try to parse JSON body if present. If parsing fails (e.g., 204 No Content),
+    // treat the service as healthy since the HTTP status is already 2xx.
+    const body = await response.json().catch(() => null);
+    if (body && body.status !== 'ok') {
+      console.warn(`[services] ${name}: upstream reported status ${JSON.stringify(body.status)}`);
       return { name, status: 'unhealthy' };
     }
 
