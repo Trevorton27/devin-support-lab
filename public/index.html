@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devin Support Lab</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f6f8;
+      color: #1f2328;
+      margin: 0;
+      padding: 2rem 1rem;
+    }
+    main {
+      max-width: 28rem;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    h1 { font-size: 1.4rem; margin: 0 0 1rem; }
+    h2 { font-size: 1rem; margin: 1.25rem 0 0.5rem; border-bottom: 1px solid #d0d7de; padding-bottom: 0.4rem; }
+    label { display: block; font-size: 0.85rem; margin-bottom: 0.25rem; }
+    input { width: 100%; box-sizing: border-box; padding: 0.4rem; font: inherit; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { display: flex; justify-content: space-between; padding: 0.4rem 0; }
+    .healthy { color: #1a7f37; font-weight: 600; }
+    .unhealthy { color: #cf222e; font-weight: 600; }
+    #message { min-height: 1.5rem; margin: 0.75rem 0; font-size: 0.9rem; }
+    #message.error { color: #cf222e; }
+    button { padding: 0.5rem 1rem; font: inherit; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Devin Support Lab</h1>
+
+    <label for="api-key">Service API key</label>
+    <input id="api-key" type="password" autocomplete="off" placeholder="Matches SERVICE_API_KEY">
+
+    <h2>Service Status</h2>
+    <ul id="services"></ul>
+    <div id="message">Enter the API key and click Refresh Status.</div>
+
+    <button id="refresh" type="button">Refresh Status</button>
+  </main>
+
+  <script>
+    // The API key is read from the input on each request and is never stored.
+    const keyInput = document.getElementById('api-key');
+    const list = document.getElementById('services');
+    const message = document.getElementById('message');
+    const button = document.getElementById('refresh');
+
+    function showMessage(text, isError = false) {
+      message.textContent = text;
+      message.className = isError ? 'error' : '';
+    }
+
+    function renderServices(services) {
+      list.replaceChildren(...services.map((service) => {
+        const item = document.createElement('li');
+        const name = document.createElement('span');
+        const status = document.createElement('span');
+        name.textContent = service.name;
+        status.textContent = service.status === 'healthy' ? 'Healthy' : 'Unhealthy';
+        status.className = service.status === 'healthy' ? 'healthy' : 'unhealthy';
+        item.append(name, status);
+        return item;
+      }));
+    }
+
+    async function refresh() {
+      button.disabled = true;
+      list.replaceChildren();
+      showMessage('Loading…');
+
+      try {
+        const response = await fetch('/api/services', {
+          headers: { 'X-Service-API-Key': keyInput.value },
+        });
+
+        if (response.status === 401) {
+          showMessage('Unauthorized: the API key is missing or incorrect.', true);
+        } else if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          showMessage(`Server error (HTTP ${response.status}): ${body.error || 'Unknown error'}`, true);
+        } else {
+          const { services } = await response.json();
+          renderServices(services);
+          const unhealthy = services.filter((s) => s.status !== 'healthy').length;
+          showMessage(unhealthy ? `${unhealthy} service(s) unhealthy.` : 'All services healthy.', unhealthy > 0);
+        }
+      } catch (err) {
+        showMessage(`Network error: ${err.message}`, true);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    button.addEventListener('click', refresh);
+  </script>
+</body>
+</html>

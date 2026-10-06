@@ -1,0 +1,26 @@
+{
+  "name": "devin-support-lab",
+  "version": "1.0.0",
+  "description": "A tiny service-monitoring dashboard used as a sandbox for practicing AI coding-agent and support-engineering workflows.",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "vitest": "^5.0.3"
+  }
+}
