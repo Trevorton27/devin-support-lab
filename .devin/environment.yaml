@@ -1,0 +1,23 @@
+initialize:
+  - run: |
+      # Ensure Node.js 22+ is available
+      node --version || echo "Node.js 22+ required"
+
+maintenance:
+  - run: |
+      # Install dependencies
+      npm install
+
+knowledge:
+  - name: lint
+    contents: |
+      npm run lint
+  - name: test
+    contents: |
+      npm test
+  - name: startup
+    contents: |
+      # Configure SERVICE_API_KEY in .env before starting
+      # cp .env.example .env
+      # Then set SERVICE_API_KEY to your chosen value
+      npm start
